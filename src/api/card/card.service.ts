@@ -16,6 +16,9 @@ export class CardService {
       orderBy: {
         order: 'asc',
       },
+      include: {
+        tag: true,
+      },
     });
     const todoList = await this.prisma.card.findMany({
       where: {
@@ -23,6 +26,9 @@ export class CardService {
       },
       orderBy: {
         order: 'asc',
+      },
+      include: {
+        tag: true,
       },
     });
     const doneList = await this.prisma.card.findMany({
@@ -32,11 +38,14 @@ export class CardService {
       orderBy: {
         order: 'asc',
       },
+      include: {
+        tag: true,
+      },
     });
     return {
-      backlogList,
-      todoList,
-      doneList,
+      BACKLOG: backlogList,
+      TODO: todoList,
+      DONE: doneList,
     };
   }
 
@@ -67,21 +76,19 @@ export class CardService {
       id: movedCardId,
       oldOrder: oldIndex,
       order: nextIndex,
-      oldColumnName,
       newColumnName,
     } = input;
+    const movedCard = await this.prisma.card.findUnique({
+      where: {
+        id: movedCardId,
+      },
+    });
 
+    if (!movedCard) {
+      throw new NotFoundException('Card not found');
+    }
+    const oldColumnName = movedCard.columnName;
     if (oldColumnName === newColumnName) {
-      const movedCard = await this.prisma.card.findUnique({
-        where: {
-          id: movedCardId,
-        },
-      });
-
-      if (!movedCard) {
-        throw new NotFoundException('Card not found');
-      }
-
       const oldList = await this.prisma.card.findMany({
         where: {
           columnName: oldColumnName,
@@ -190,12 +197,12 @@ export class CardService {
               ? ActionEnum.MOVE_DOWN
               : ActionEnum.MOVE_UP
             : ActionEnum.MOVE_TO,
-        toListName:newColumnName,
-        Card:{
-            connect:{
-                id:movedCardId
-            }
-        }
+        toListName: newColumnName,
+        Card: {
+          connect: {
+            id: movedCardId,
+          },
+        },
       },
     });
 
